@@ -8,8 +8,19 @@ interface Note {
   createdAt: Date;
 }
 
-export const useNotes = () => {
-  const notes = ref<Note[]>([
+const loadNotesFromStorage = (): Note[] => {
+  try {
+    const stored = localStorage.getItem("vue-notes");
+    if (stored) {
+      return JSON.parse(stored).map((note: any) => ({
+        ...note,
+        createdAt: new Date(note.createdAt),
+      }));
+    }
+  } catch (error) {
+    console.error("Failed to load notes from localStorage:", error);
+  }
+  return [
     {
       id: 1,
       title: "First Note",
@@ -24,49 +35,53 @@ export const useNotes = () => {
       tags: ["learning", "vue", "frontend"],
       createdAt: new Date(),
     },
-  ]);
+  ];
+};
 
-  const isEditing = ref(false);
-  const editingId = ref<number | null>(null);
-  const noteForm = ref({
-    title: "",
-    content: "",
-    tags: [] as string[],
+const notes = ref<Note[]>(loadNotesFromStorage());
+
+const isEditing = ref(false);
+const editingId = ref<number | null>(null);
+const noteForm = ref({
+  title: "",
+  content: "",
+  tags: [] as string[],
+});
+const searchQuery = ref("");
+const selectedTags = ref<string[]>([]);
+const newTag = ref("");
+
+const allTags = computed(() => {
+  const tagSet = new Set<string>();
+  notes.value.forEach((note) => {
+    note.tags.forEach((tag) => tagSet.add(tag));
   });
-  const searchQuery = ref("");
-  const selectedTags = ref<string[]>([]);
-  const newTag = ref("");
+  return Array.from(tagSet).sort();
+});
 
-  const allTags = computed(() => {
-    const tagSet = new Set<string>();
-    notes.value.forEach((note) => {
-      note.tags.forEach((tag) => tagSet.add(tag));
-    });
-    return Array.from(tagSet).sort();
-  });
+const filteredNotes = computed(() => {
+  let result = notes.value;
 
-  const filteredNotes = computed(() => {
-    let result = notes.value;
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(
+      (note) =>
+        note.title.toLowerCase().includes(query) ||
+        note.content.toLowerCase().includes(query) ||
+        note.tags.some((tag) => tag.toLowerCase().includes(query))
+    );
+  }
 
-    if (searchQuery.value.trim()) {
-      const query = searchQuery.value.toLowerCase();
-      result = result.filter(
-        (note) =>
-          note.title.toLowerCase().includes(query) ||
-          note.content.toLowerCase().includes(query) ||
-          note.tags.some((tag) => tag.toLowerCase().includes(query))
-      );
+  if (selectedTags.value.length > 0) {
+    result = result.filter((note) =>
+      selectedTags.value.every((tag) => note.tags.includes(tag))
+    );
+  }
 
-      if (selectedTags.value.length > 0) {
-        result = result.filter((note) =>
-          selectedTags.value.every((tag) => note.tags.includes(tag))
-        );
-      }
-    }
+  return result;
+});
 
-    return result;
-  });
-
+export const useNotes = () => {
   watch(
     notes,
     (newNotes) => {
