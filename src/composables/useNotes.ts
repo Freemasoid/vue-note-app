@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 interface Note {
   id: number;
@@ -29,6 +29,30 @@ export const useNotes = () => {
     title: "",
     content: "",
   });
+  const searchQuery = ref("");
+
+  const filteredNotes = computed(() => {
+    if (!searchQuery.value.trim()) {
+      return notes.value;
+    }
+
+    const query = searchQuery.value.toLowerCase();
+    return notes.value.filter(
+      (note) =>
+        note.title.toLowerCase().includes(query) ||
+        note.content.toLowerCase().includes(query)
+    );
+  });
+
+  const notesStats = computed(() => ({
+    total: notes.value.length,
+    filtered: filteredNotes.value.length,
+    searchActive: searchQuery.value.trim().length > 0,
+  }));
+
+  const clearSearch = () => {
+    searchQuery.value = "";
+  };
 
   const handleCreate = () => {
     isEditing.value = true;
@@ -83,11 +107,16 @@ export const useNotes = () => {
     isEditing,
     editingId,
     noteForm,
+    searchQuery,
+    // Computed properties
+    filteredNotes,
+    notesStats,
     // Actions
     handleCreate,
     handleEdit,
     handleSave,
     handleDelete,
     cancelEdit,
+    clearSearch,
   };
 };
