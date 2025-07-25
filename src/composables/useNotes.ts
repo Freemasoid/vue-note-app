@@ -81,6 +81,61 @@ const filteredNotes = computed(() => {
   return result;
 });
 
+const dashboardStats = computed(() => {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const recentNotes = notes.value.filter(
+    (note) => note.createdAt >= sevenDaysAgo
+  );
+  const monthlyNotes = notes.value.filter(
+    (note) => note.createdAt >= thirtyDaysAgo
+  );
+
+  // Tag usage statistics
+  const tagCounts = new Map<string, number>();
+  notes.value.forEach((note) => {
+    note.tags.forEach((tag) => {
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+    });
+  });
+
+  const mostUsedTags = Array.from(tagCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  // Content statistics
+  const avgContentLength =
+    notes.value.length > 0
+      ? Math.round(
+          notes.value.reduce((sum, note) => sum + note.content.length, 0) /
+            notes.value.length
+        )
+      : 0;
+
+  return {
+    totalNotes: notes.value.length,
+    recentNotes: recentNotes.length,
+    monthlyNotes: monthlyNotes.length,
+    totalTags: allTags.value.length,
+    mostUsedTags,
+    avgContentLength,
+    oldestNote:
+      notes.value.length > 0
+        ? notes.value.reduce((oldest, note) =>
+            note.createdAt < oldest.createdAt ? note : oldest
+          )
+        : null,
+    newestNote:
+      notes.value.length > 0
+        ? notes.value.reduce((newest, note) =>
+            note.createdAt > newest.createdAt ? note : newest
+          )
+        : null,
+  };
+});
+
 export const useNotes = () => {
   watch(
     notes,
@@ -199,5 +254,6 @@ export const useNotes = () => {
     removeTagFromNote,
     toggleTagFilter,
     clearTagFilters,
+    dashboardStats,
   };
 };
