@@ -10,6 +10,11 @@
           class="nav-link"
           >Notes</router-link
         >
+        <router-link
+          to="/dashboard"
+          class="nav-link"
+          >Dashboard</router-link
+        >
       </nav>
     </header>
     <main class="app-main">
@@ -19,6 +24,11 @@
 </template>
 
 <style scoped>
+nav {
+  display: flex;
+  gap: 1rem;
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;
